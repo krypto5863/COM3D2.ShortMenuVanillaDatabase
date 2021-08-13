@@ -3,8 +3,7 @@ A completely standalone compliment to ShortMenuLoader(SML), SMVD replaces a func
 
 # Highlights #
 
-- Faster Cold Start Times
-- Faster Edit Mode Loads
+- Faster Cold Edit Mode Loads
 - Minor Multi-threading
 - Optimized Code
 - Self Correcting Smart Cache
