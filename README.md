@@ -21,6 +21,10 @@ You may be wondering, "but sometimes I can enter edit mode immediately!". That's
 
 SMVD intercepts the calls for unmanaged code and instead redirects everything to SMVD, the `cm3d2.dll` is never called and this not only helps with marshalling overhead but puts a bit more code and control in the hands of modders, not to mention it being faster... The plugin then emulates what the unmanaged code seems to do, though we have no exact way of knowing since we can't see the unmanaged code, and provides the same output. As far as the game is concerned, it's asking for something and receiving the same product in exchange that it normally would. Maybe slightly different.
 
+Here is a diagram that illustrates the relation of SMVD in the code stream.
+
+![image](https://user-images.githubusercontent.com/29824718/129407793-a94a6395-9324-41fe-823d-9fc413d2da22.png)
+
 On the very first load, SMVD will load all relevant arc files that contain menu files and will create it's database, this can take less than a minute on average. Once the database is complete, it saves a smart cache, very similar to the one in SML. Once the smart cache is built, database loads are nearly instant, less than 10 seconds in the worst cases.
 
 # Usage #
