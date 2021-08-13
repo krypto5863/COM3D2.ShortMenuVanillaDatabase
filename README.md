@@ -29,3 +29,5 @@ On the very first load, SMVD will load all relevant arc files that contain menu 
 2. Place the dll from https://github.com/JustAGuest4168/CM3D2.Toolkit/releases into the same directory.
 3. ???
 4. Profit, the first run will build a cache. Use with SML for best results!
+
+Please note, SMVD was built against version `COM 2.3.1` and `BepinEx 5.4.15` and you should be using these for best results. Version 2.5/3.0 of COM3D2 isn't supported since I don't know if it'll work and don't care to support it.
