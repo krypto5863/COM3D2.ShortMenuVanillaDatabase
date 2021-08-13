@@ -17,7 +17,7 @@ using System.Text;
 namespace ShortMenuVanillaDatabase
 {
 	//This is the metadata set for your plugin.
-	[BepInPlugin("ShortMenuVanillaDatabase", "ShortMenuVanillaDatabase", "1.0.1")]
+	[BepInPlugin("ShortMenuVanillaDatabase", "ShortMenuVanillaDatabase", "1.0.2")]
 	public class Main : BaseUnityPlugin
 	{
 		public static Main @this;

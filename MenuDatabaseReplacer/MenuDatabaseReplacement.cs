@@ -46,12 +46,15 @@ namespace ShortMenuVanillaDatabase
 			{
 				List<string> PathsToLoad = new List<string>()
 					{
-							$"{BepInEx.Paths.GameRootPath}\\GameData",
-							$"{BepInEx.Paths.GameRootPath}\\GameData_20"
+							$"{BepInEx.Paths.GameRootPath}\\GameData"
 					};
 				if (!String.IsNullOrEmpty(GameMain.Instance.CMSystem.CM3D2Path))
 				{
 					PathsToLoad.Add(GameMain.Instance.CMSystem.CM3D2Path + "\\GameData");
+				}
+				if (Directory.Exists($"{BepInEx.Paths.GameRootPath}\\GameData_20")) 
+				{
+					PathsToLoad.Add($"{BepInEx.Paths.GameRootPath}\\GameData_20");
 				}
 
 				foreach (string s in PathsToLoad)
