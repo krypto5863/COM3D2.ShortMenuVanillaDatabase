@@ -11,9 +11,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace MenuDatabaseReplacer
+namespace ShortMenuVanillaDatabase
 {
-	class MenuDatabaseReplacement
+	public class MenuDatabaseReplacement
 	{
 		public Dictionary<int, CacheFile.MenuStub> MenusList { get; private set; }
 

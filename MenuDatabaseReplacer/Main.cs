@@ -14,17 +14,17 @@ using System.Text;
 [module: UnverifiableCode]
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
 
-namespace MenuDatabaseReplacer
+namespace ShortMenuVanillaDatabase
 {
 	//This is the metadata set for your plugin.
-	[BepInPlugin("ShortMenuVanillaDatabase", "ShortMenuVanillaDatabase", "1.0")]
+	[BepInPlugin("ShortMenuVanillaDatabase", "ShortMenuVanillaDatabase", "1.0.1")]
 	public class Main : BaseUnityPlugin
 	{
 		public static Main @this;
 		//Static var for the logger so you can log from other classes.
 		public static ManualLogSource logger;
 		//This is where the magic happens.
-		private static MenuDatabaseReplacement Database;
+		public static MenuDatabaseReplacement Database;
 		//I'd rather not use an index tbh but whatever, Kiss's implementation is literally retarded.
 		private static Dictionary<MenuDataBase, int> IndexToRead = new Dictionary<MenuDataBase, int>();
 

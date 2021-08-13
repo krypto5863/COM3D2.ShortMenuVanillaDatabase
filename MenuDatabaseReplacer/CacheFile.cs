@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace MenuDatabaseReplacer
+namespace ShortMenuVanillaDatabase
 {
-	class CacheFile
+	public class CacheFile
 	{
 		public Dictionary<string, DateTime> CachedLoadedAndDatedArcs { get; set; }
 		public HashSet<CacheFile.MenuStub> MenusList { get; set; }
@@ -15,7 +15,7 @@ namespace MenuDatabaseReplacer
 			CachedLoadedAndDatedArcs = new Dictionary<string, DateTime>();
 			MenusList = new HashSet<MenuStub>();
 		}
-		internal class MenuStub
+		public class MenuStub
 		{
 			public string FileName { get; set; }
 			public string PathInMenu { get; set; }
