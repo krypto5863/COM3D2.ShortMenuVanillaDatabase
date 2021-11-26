@@ -31,36 +31,42 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="0Harmony">
-      <HintPath>..\..\..\..\Desktop\Meido Assemblies\COM Assemblies\BepinEx\0Harmony.dll</HintPath>
+    <Reference Include="0Harmony, Version=2.5.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Desktop\Game Related Files\Meido Related Stuff\Meido Assemblies\COM Assemblies\BepinEx\0Harmony.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\..\Desktop\Meido Assemblies\COM Assemblies\GameOriginal 2.3.1\stubbed\Assembly-CSharp.dll</HintPath>
+    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\Experiment5ParallelMenuLoading\packages\COM3D2.GameLibs.2.9.0-r.0\lib\net35\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\..\..\..\Desktop\Meido Assemblies\COM Assemblies\GameOriginal 2.3.1\stubbedfirstpass\Assembly-CSharp-firstpass.dll</HintPath>
+    <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\Experiment5ParallelMenuLoading\packages\COM3D2.GameLibs.2.9.0-r.0\lib\net35\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="BepInEx">
-      <HintPath>..\..\..\..\Desktop\Meido Assemblies\COM Assemblies\BepinEx\BepInEx.dll</HintPath>
+    <Reference Include="BepInEx, Version=5.4.15.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Desktop\Game Related Files\Meido Related Stuff\Meido Assemblies\COM Assemblies\BepinEx\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="CM3D2.Toolkit.Guest4168Branch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Desktop\Meido Assemblies\COM Assemblies\Resources\CM3D2.Toolkit.Guest4168Branch.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net35\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\..\Desktop\Game Related Files\Meido Related Stuff\Meido Assemblies\COM Assemblies\GameOriginal 2.6.1\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Threading, Version=1.0.3333.0, Culture=neutral, PublicKeyToken=402899b480e6f383, processorArchitecture=MSIL">
-      <HintPath>..\packages\TaskParallelLibrary.Repackaged.1.0.4-custom\lib\Net35\System.Threading.dll</HintPath>
+      <HintPath>..\..\Experiment5ParallelMenuLoading\packages\TaskParallelLibrary.Repackaged.1.0.4-custom\lib\Net35\System.Threading.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="UnityEngine">
-      <HintPath>..\..\..\..\Desktop\Meido Assemblies\COM Assemblies\GameOriginal 2.3.1\UnityEngine.dll</HintPath>
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Desktop\Game Related Files\Meido Related Stuff\Meido Assemblies\COM Assemblies\GameOriginal 2.6.1\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\Experiment5ParallelMenuLoading\packages\COM3D2.GameLibs.2.9.0-r.0\lib\net35\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

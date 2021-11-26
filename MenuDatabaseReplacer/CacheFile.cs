@@ -15,7 +15,7 @@ namespace ShortMenuVanillaDatabase
 			CachedLoadedAndDatedArcs = new Dictionary<string, DateTime>();
 			MenusList = new HashSet<MenuStub>();
 		}
-		public class MenuStub
+		public struct MenuStub
 		{
 			public string FileName { get; set; }
 			public string PathInMenu { get; set; }

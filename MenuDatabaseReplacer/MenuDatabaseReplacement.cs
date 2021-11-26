@@ -435,6 +435,12 @@ namespace ShortMenuVanillaDatabase
 						}
 					}
 				}
+
+				foreach (KeyValuePair<int, CacheFile.MenuStub> kv in MenusList.Where(t => t.Value.FileName == cacheEntry.FileName)) 
+				{
+					MenusList.Remove(kv.Key);
+				}
+
 				MenusList[Index++] = cacheEntry;
 			}
 			catch
