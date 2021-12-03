@@ -436,12 +436,44 @@ namespace ShortMenuVanillaDatabase
 					}
 				}
 
-				foreach (KeyValuePair<int, CacheFile.MenuStub> kv in MenusList.Where(t => t.Value.FileName == cacheEntry.FileName)) 
-				{
-					MenusList.Remove(kv.Key);
-				}
+				var ExistingMenu = MenusList.Where(t => t.Value.FileName == cacheEntry.FileName).ToList();
 
-				MenusList[Index++] = cacheEntry;
+				if (ExistingMenu.Count() > 0)
+				{
+
+					try
+					{
+
+						var firstEntry = ExistingMenu.First();
+
+						MenusList[firstEntry.Key] = cacheEntry;
+
+						ExistingMenu.Remove(firstEntry);
+
+						if (ExistingMenu.Count() > 0)
+						{
+							try
+							{
+								foreach (var key in ExistingMenu) 
+								{
+
+									MenusList.Remove(key.Key);
+								
+								}
+							}
+							catch { Main.logger.LogWarning("Failed to remove some old menus from the cache! This many cause duplicates... You may want to delete your cache!"); }//Better to just keep going in the case of a failure like this.
+						}
+
+					}
+					catch 
+					{
+						MenusList[Index++] = cacheEntry;
+					}
+				}
+				else
+				{
+					MenusList[Index++] = cacheEntry;
+				}
 			}
 			catch
 			{
