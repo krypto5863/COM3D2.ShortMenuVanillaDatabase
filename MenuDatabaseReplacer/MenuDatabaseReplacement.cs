@@ -9,7 +9,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEngine;
 
 namespace ShortMenuVanillaDatabase
 {
@@ -46,21 +45,28 @@ namespace ShortMenuVanillaDatabase
 			{
 				List<string> PathsToLoad = new List<string>()
 					{
-							$"{BepInEx.Paths.GameRootPath}\\GameData"
+						$"{BepInEx.Paths.GameRootPath}\\GameData"
 					};
 				if (!String.IsNullOrEmpty(GameMain.Instance.CMSystem.CM3D2Path))
 				{
 					PathsToLoad.Add(GameMain.Instance.CMSystem.CM3D2Path + "\\GameData");
 				}
-				if (Directory.Exists($"{BepInEx.Paths.GameRootPath}\\GameData_20")) 
+				if (Directory.Exists($"{BepInEx.Paths.GameRootPath}\\GameData_20"))
 				{
 					PathsToLoad.Add($"{BepInEx.Paths.GameRootPath}\\GameData_20");
 				}
 
 				foreach (string s in PathsToLoad)
 				{
-					var ArcFilesLoaded = Directory.GetFiles(s, "menu*.arc").ToList();
-					ArcFilesLoaded.AddRange(Directory.GetFiles(s, "parts*.arc"));
+					var ArcFilesLoaded = Directory.GetFiles(s)
+					.Where(t =>
+						(
+						Path.GetFileName(t).ToLower().StartsWith("menu")
+						|| Path.GetFileName(t).ToLower().StartsWith("parts")
+						)
+						&& t.ToLower().EndsWith(".arc")
+					)
+					.ToList();
 
 					foreach (string arc in ArcFilesLoaded)
 					{
@@ -116,7 +122,7 @@ namespace ShortMenuVanillaDatabase
 						}
 					}
 
-					Main.logger.LogDebug($"Done checking over files... Updating held list of menus with succesfully cached files...");
+					Main.logger.LogDebug($"Done checking over files... Updating held list of menus with successfully cached files...");
 
 					foreach (CacheFile.MenuStub f in cachedFile.MenusList)
 					{
@@ -128,7 +134,6 @@ namespace ShortMenuVanillaDatabase
 						arcFileExplorer = new MultiArcLoader(ArcsToReload.ToArray(), Environment.ProcessorCount, MultiArcLoader.LoadMethod.Single, true, false, MultiArcLoader.Exclude.Voice | MultiArcLoader.Exclude.BG | MultiArcLoader.Exclude.CSV | MultiArcLoader.Exclude.Motion | MultiArcLoader.Exclude.Sound);
 
 						arcFileExplorer.LoadArcs();
-
 
 						Main.logger.LogDebug($"Done, loading refreshed files...");
 					}
@@ -164,7 +169,7 @@ namespace ShortMenuVanillaDatabase
 
 				stopwatch = null;
 
-				Main.logger.LogInfo($"Nulling arc...");
+				//Main.logger.LogInfo($"Nulling arc...");
 
 				arcFileExplorer = null;
 			}), cts.Token);
@@ -233,7 +238,7 @@ namespace ShortMenuVanillaDatabase
 
 				//cacheEntry.Hash = (ulong)data.GetHashCode();
 
-				if (text != "CM3D2_MENU")
+				if (!text.Equals("CM3D2_MENU"))
 				{
 					Main.logger.LogError("ProcScriptBin (例外 : ヘッダーファイルが不正です。) The header indicates a file type that is not a menu file!" + text + " @ " + f_strMenuFileName);
 
@@ -268,7 +273,7 @@ namespace ShortMenuVanillaDatabase
 					{
 						string stringCom = UTY.GetStringCom(text6);
 						string[] stringList = UTY.GetStringList(text6);
-						if (stringCom == "name")
+						if (stringCom.Equals("name"))
 						{
 							if (stringList.Length > 1)
 							{
@@ -295,7 +300,7 @@ namespace ShortMenuVanillaDatabase
 								cacheEntry.Name = "";
 							}
 						}
-						else if (stringCom == "setumei")
+						else if (stringCom.Equals("setumei"))
 						{
 							if (stringList.Length > 1)
 							{
@@ -309,7 +314,7 @@ namespace ShortMenuVanillaDatabase
 								cacheEntry.Description = "";
 							}
 						}
-						else if (stringCom == "category")
+						else if (stringCom.Equals("category"))
 						{
 							if (stringList.Length > 1)
 							{
@@ -329,7 +334,7 @@ namespace ShortMenuVanillaDatabase
 								return;
 							}
 						}
-						else if (stringCom == "color_set")
+						else if (stringCom.Equals("color_set"))
 						{
 							if (stringList.Length > 1)
 							{
@@ -353,7 +358,7 @@ namespace ShortMenuVanillaDatabase
 								Main.logger.LogWarning("A color_set entry exists but is otherwise empty" + " @ " + f_strMenuFileName);
 							}
 						}
-						else if (stringCom == "tex" || stringCom == "テクスチャ変更")
+						else if (stringCom.Equals("tex") || stringCom.Equals("テクスチャ変更"))
 						{
 							MaidParts.PARTS_COLOR pcMultiColorID = MaidParts.PARTS_COLOR.NONE;
 							if (stringList.Length == 6)
@@ -372,7 +377,7 @@ namespace ShortMenuVanillaDatabase
 								cacheEntry.MultiColorID = pcMultiColorID;
 							}
 						}
-						else if (stringCom == "icon" || stringCom == "icons")
+						else if (stringCom.Equals("icon") || stringCom.Equals("icons"))
 						{
 							if (stringList.Length > 1)
 							{
@@ -385,7 +390,7 @@ namespace ShortMenuVanillaDatabase
 								return;
 							}
 						}
-						else if (stringCom == "saveitem")
+						else if (stringCom.Equals("saveitem"))
 						{
 							if (stringList.Length > 1)
 							{
@@ -400,11 +405,11 @@ namespace ShortMenuVanillaDatabase
 								Main.logger.LogWarning("A saveitem entry exists with nothing set in the field @ " + f_strMenuFileName);
 							}
 						}
-						else if (stringCom == "unsetitem")
+						else if (stringCom.Equals("unsetitem"))
 						{
 							cacheEntry.DelMenu = true;
 						}
-						else if (stringCom == "priority")
+						else if (stringCom.Equals("priority"))
 						{
 							if (stringList.Length > 1)
 							{
@@ -417,13 +422,13 @@ namespace ShortMenuVanillaDatabase
 								cacheEntry.Priority = 10000f;
 							}
 						}
-						else if (stringCom == "メニューフォルダ")
+						else if (stringCom.Equals("メニューフォルダ"))
 						{
 							if (stringList.Length > 1)
 							{
-								if (stringList[1].ToLower() == "man")
+								if (!stringList[1].ToLower().Equals("man"))
 								{
-									cacheEntry.ManMenu = true;
+									cacheEntry.ManMenu = false;
 								}
 							}
 							else
@@ -440,10 +445,8 @@ namespace ShortMenuVanillaDatabase
 
 				if (ExistingMenu.Count() > 0)
 				{
-
 					try
 					{
-
 						var firstEntry = ExistingMenu.First();
 
 						MenusList[firstEntry.Key] = cacheEntry;
@@ -454,18 +457,15 @@ namespace ShortMenuVanillaDatabase
 						{
 							try
 							{
-								foreach (var key in ExistingMenu) 
+								foreach (var key in ExistingMenu)
 								{
-
 									MenusList.Remove(key.Key);
-								
 								}
 							}
 							catch { Main.logger.LogWarning("Failed to remove some old menus from the cache! This many cause duplicates... You may want to delete your cache!"); }//Better to just keep going in the case of a failure like this.
 						}
-
 					}
-					catch 
+					catch
 					{
 						MenusList[Index++] = cacheEntry;
 					}
