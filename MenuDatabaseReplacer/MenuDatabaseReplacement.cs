@@ -426,9 +426,9 @@ namespace ShortMenuVanillaDatabase
 						{
 							if (stringList.Length > 1)
 							{
-								if (!stringList[1].ToLower().Equals("man"))
+								if (stringList[1].ToLower().Equals("man"))
 								{
-									cacheEntry.ManMenu = false;
+									cacheEntry.ManMenu = true;
 								}
 							}
 							else
