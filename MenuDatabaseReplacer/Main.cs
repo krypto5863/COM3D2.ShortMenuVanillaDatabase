@@ -1,14 +1,12 @@
 ﻿using BepInEx;
-using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Permissions;
-using System.Text;
 
 //These two lines tell your plugin to not give a flying fuck about accessing private variables/classes whatever. It requires a publicized stubb of the library with those private objects though.
 [module: UnverifiableCode]
@@ -17,21 +15,24 @@ using System.Text;
 namespace ShortMenuVanillaDatabase
 {
 	//This is the metadata set for your plugin.
-	[BepInPlugin("ShortMenuVanillaDatabase", "ShortMenuVanillaDatabase", "1.1.3")]
+	[BepInPlugin("ShortMenuVanillaDatabase", "ShortMenuVanillaDatabase", "1.2")]
 	public class Main : BaseUnityPlugin
 	{
 		public static Main @this;
+
 		//Static var for the logger so you can log from other classes.
 		public static ManualLogSource logger;
+
 		//This is where the magic happens.
 		public static MenuDatabaseReplacement Database;
+
 		//I'd rather not use an index tbh but whatever, Kiss's implementation is literally retarded.
 		private static Dictionary<MenuDataBase, int> IndexToRead = new Dictionary<MenuDataBase, int>();
 
 		//Config entry variable. You set your configs to this.
 		//internal static ConfigEntry<bool> ExampleConfig;
 
-		static Harmony harmony;
+		private static Harmony harmony;
 
 		private void Awake()
 		{
@@ -46,6 +47,16 @@ namespace ShortMenuVanillaDatabase
 
 			//Installs the patches in the Main class.
 
+			var Plugs = Directory.GetFiles(BepInEx.Paths.PluginPath, "*", SearchOption.AllDirectories)
+				.Select(t => Path.GetFileName(t).ToLower());
+
+			var HasDependencies = Plugs.Contains("system.threading.dll") && Plugs.Contains("cm3d2.toolkit.guest4168branch.dll");
+
+			if (!HasDependencies)
+			{
+				Main.logger.LogFatal("SMVD is missing some dependencies! SMVD will not operate correctly and neither will your game!");
+			}
+
 #if !OnlyCompare
 			harmony = Harmony.CreateAndPatchAll(typeof(Main));
 #else
@@ -53,7 +64,7 @@ namespace ShortMenuVanillaDatabase
 #endif
 		}
 
-		//Basic harmony patch format. You specify the class to be patched and the method within that class to be patched. This patcher prefixes the method, meaning it runs before the patched method does. You can also postfix, run after the method patches and do lots of things like change parameters and results with harmony patching. Very powerful.		
+		//Basic harmony patch format. You specify the class to be patched and the method within that class to be patched. This patcher prefixes the method, meaning it runs before the patched method does. You can also postfix, run after the method patches and do lots of things like change parameters and results with harmony patching. Very powerful.
 		[HarmonyPatch(typeof(MenuDataBase), MethodType.Constructor, new Type[] { typeof(IntPtr), typeof(EnumData), typeof(EnumData) })]
 		[HarmonyPrefix]
 		private static void BuildingDatabase()
@@ -89,6 +100,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "Dispose", new Type[] { typeof(bool) })]
 		[HarmonyPrefix]
 		private static bool DisposeVar(MenuDataBase __instance)
@@ -165,6 +177,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		//Unimplemented... It's mostly only used within MenuDataBase for some functions. We don't need it.
 		[HarmonyPatch(typeof(MenuDataBase), "GetNativeHash")]
 		[HarmonyPrefix]
@@ -178,6 +191,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetMenuFileName")]
 		[HarmonyPrefix]
 		private static bool MenuName(ref string __result, ref MenuDataBase __instance)
@@ -190,6 +204,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		//Not Implemented... Never really called though. What's even the point?
 		[HarmonyPatch(typeof(MenuDataBase), "GetParentMenuFileName")]
 		[HarmonyPrefix]
@@ -203,6 +218,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetSrcFileName")]
 		[HarmonyPrefix]
 		private static bool GetSrcFileName(ref string __result, ref MenuDataBase __instance)
@@ -215,6 +231,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetItemName")]
 		[HarmonyPrefix]
 		private static bool GetName(ref string __result, ref MenuDataBase __instance)
@@ -227,6 +244,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetCategoryName")]
 		[HarmonyPrefix]
 		private static bool GetCategory(ref string __result, ref MenuDataBase __instance)
@@ -239,6 +257,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetInfoText")]
 		[HarmonyPrefix]
 		private static bool GetInfoText(ref string __result, ref MenuDataBase __instance)
@@ -355,6 +374,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		//Not Implemented... Same deal, and I've yet to see it do anything. Will eventually implement.
 		[HarmonyPatch(typeof(MenuDataBase), "GetSaveItem")]
 		[HarmonyPrefix]
@@ -368,6 +388,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetBoDelOnly")]
 		[HarmonyPrefix]
 		private static bool GetBoDelOnly(ref bool __result, ref MenuDataBase __instance)
@@ -380,6 +401,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetPriority")]
 		[HarmonyPrefix]
 		private static bool GetPriority(ref float __result, ref MenuDataBase __instance)
@@ -392,6 +414,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetIsMan")]
 		[HarmonyPrefix]
 		private static bool GetIsMan(ref bool __result, ref MenuDataBase __instance)
@@ -404,6 +427,7 @@ namespace ShortMenuVanillaDatabase
 			return true;
 #endif
 		}
+
 		//Not Implemented... I don't even think this does anything but return false though...
 		[HarmonyPatch(typeof(MenuDataBase), "GetIsCollabo")]
 		[HarmonyPrefix]

@@ -1,12 +1,8 @@
 ﻿using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace ShortMenuVanillaDatabase
 {
-	class JustLogging
+	internal class JustLogging
 	{
 		[HarmonyPatch(typeof(MenuDataBase), "JobFinished")]
 		[HarmonyPostfix]
@@ -35,6 +31,7 @@ namespace ShortMenuVanillaDatabase
 		{
 			Main.logger.LogDebug($"returning version of {__result}");
 		}
+
 		//Unimplemented...
 		[HarmonyPatch(typeof(MenuDataBase), "GetNativeHash")]
 		[HarmonyPostfix]
@@ -42,12 +39,14 @@ namespace ShortMenuVanillaDatabase
 		{
 			Main.logger.LogDebug($"returning hash of {__result}");
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetMenuFileName")]
 		[HarmonyPostfix]
 		private static void menufilename(ref string __result)
 		{
 			Main.logger.LogDebug($"returning menufilename of {__result}");
 		}
+
 		//Not Implemented...
 		[HarmonyPatch(typeof(MenuDataBase), "GetParentMenuFileName")]
 		[HarmonyPostfix]
@@ -55,24 +54,28 @@ namespace ShortMenuVanillaDatabase
 		{
 			Main.logger.LogDebug($"returning parentmenufile of {__result}");
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetSrcFileName")]
 		[HarmonyPostfix]
 		private static void getsrcfilename(ref string __result)
 		{
 			Main.logger.LogDebug($"returning srcfilename of {__result}");
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetItemName")]
 		[HarmonyPostfix]
 		private static void getitemanme(ref string __result)
 		{
 			Main.logger.LogDebug($"returning returning item name of {__result}");
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetCategoryName")]
 		[HarmonyPostfix]
 		private static void categoryname(ref string __result)
 		{
 			Main.logger.LogDebug($"returning category of {__result}");
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetInfoText")]
 		[HarmonyPostfix]
 		private static void returninginfotext(ref string __result)
@@ -135,6 +138,7 @@ namespace ShortMenuVanillaDatabase
 		{
 			Main.logger.LogDebug($"returning icon of {__result}");
 		}
+
 		//Not Implemented...
 		[HarmonyPatch(typeof(MenuDataBase), "GetSaveItem")]
 		[HarmonyPostfix]
@@ -142,24 +146,28 @@ namespace ShortMenuVanillaDatabase
 		{
 			Main.logger.LogDebug($"returning save item of {__result}");
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetBoDelOnly")]
 		[HarmonyPostfix]
 		private static void bodel(ref bool __result)
 		{
 			Main.logger.LogDebug($"returning delmenu of {__result}");
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetPriority")]
 		[HarmonyPostfix]
 		private static void priority(ref float __result)
 		{
 			Main.logger.LogDebug($"returning priority of {__result}");
 		}
+
 		[HarmonyPatch(typeof(MenuDataBase), "GetIsMan")]
 		[HarmonyPostfix]
 		private static void getisman(ref bool __result)
 		{
 			Main.logger.LogDebug($"returning is man menu of {__result}");
 		}
+
 		//Not Implemented...
 		[HarmonyPatch(typeof(MenuDataBase), "GetIsCollabo")]
 		[HarmonyPostfix]

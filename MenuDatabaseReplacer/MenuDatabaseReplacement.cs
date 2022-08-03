@@ -20,6 +20,8 @@ namespace ShortMenuVanillaDatabase
 
 		public int Index { get; private set; }
 
+		private ArcCompare compare = new ArcCompare();
+
 		public MenuDatabaseReplacement()
 		{
 			MenusList = new Dictionary<int, CacheFile.MenuStub>();
@@ -43,6 +45,7 @@ namespace ShortMenuVanillaDatabase
 			var cts = new CancellationTokenSource();
 			Task LoaderTask = Task.Factory.StartNew(new Action(() =>
 			{
+				//The following simply decides what is to be loaded.
 				List<string> PathsToLoad = new List<string>()
 					{
 						$"{BepInEx.Paths.GameRootPath}\\GameData"
@@ -56,18 +59,21 @@ namespace ShortMenuVanillaDatabase
 					PathsToLoad.Add($"{BepInEx.Paths.GameRootPath}\\GameData_20");
 				}
 
+				//This loop handles the listing of arcs within the above directories.
 				foreach (string s in PathsToLoad)
 				{
+					//Gets all arc files in the directories that match our filters..
 					var ArcFilesLoaded = Directory.GetFiles(s)
 					.Where(t =>
 						(
 						Path.GetFileName(t).ToLower().StartsWith("menu")
 						|| Path.GetFileName(t).ToLower().StartsWith("parts")
 						)
-						&& t.ToLower().EndsWith(".arc")
+						&& t.EndsWith(".arc", StringComparison.OrdinalIgnoreCase)
 					)
 					.ToList();
 
+					//Gets the write time for each arc file to track any modifications.
 					foreach (string arc in ArcFilesLoaded)
 					{
 						CurrentlyLoadedAndDatedArcs[arc] = File.GetLastWriteTimeUtc(arc);
@@ -76,49 +82,69 @@ namespace ShortMenuVanillaDatabase
 
 				Main.logger.LogDebug($"We found {CurrentlyLoadedAndDatedArcs.Count} that fit our specifications.");
 
-				MultiArcLoader arcFileExplorer = new MultiArcLoader(CurrentlyLoadedAndDatedArcs.Keys.ToArray(), Environment.ProcessorCount, MultiArcLoader.LoadMethod.Single, true, false, MultiArcLoader.Exclude.Voice | MultiArcLoader.Exclude.BG | MultiArcLoader.Exclude.CSV | MultiArcLoader.Exclude.Motion | MultiArcLoader.Exclude.Sound);
+				//Loads all our arc files that we've observed are currently available.
+				MultiArcLoader arcFileExplorer = new MultiArcLoader(CurrentlyLoadedAndDatedArcs.Keys.ToArray(), Environment.ProcessorCount, MultiArcLoader.LoadMethod.Single, true, true, MultiArcLoader.Exclude.Voice | MultiArcLoader.Exclude.BG | MultiArcLoader.Exclude.CSV | MultiArcLoader.Exclude.Motion | MultiArcLoader.Exclude.Sound);
 
+				//Loads our cache file.
 				if (File.Exists(cachePath))
 				{
 					try
 					{
 						string mconfig = (File.ReadAllText(cachePath));
-
 						cachedFile = JsonConvert.DeserializeObject<CacheFile>(mconfig);
 					}
 					catch (Exception e)
 					{
 						Main.logger.LogError("Ran into a catastrophic error while trying to read the MenuDatabaseCache. We will attempt to delete the cache and rebuild it...");
-
 						Main.logger.LogError($"{e.Message}\n\n{e.StackTrace}");
 
 						File.Delete(cachePath);
+						cachedFile = null;
 
 						throw e;
 					}
 
 					Main.logger.LogDebug($"Cache was read, it contains {cachedFile.MenusList.Count()} entries");
-
 					Main.logger.LogDebug($"We extrapolated {cachedFile.CachedLoadedAndDatedArcs.Count} arcs were loaded from cache...");
 
 					List<string> ArcsToReload = new List<string>();
 
+					//These are what's currently loaded in this run and compares it to what's not been loaded or what menu files have been loaded from
 					var ArcsToCheck = CurrentlyLoadedAndDatedArcs
 					.Keys
 					.Where(k => cachedFile.MenusList.Select(m => m.SourceArc).Contains(k) || !cachedFile.CachedLoadedAndDatedArcs.ContainsKey(k));
 
+					//This checks each currently loaded arc against what's been loaded in previous runs and checks to see if anything has changed.
 					foreach (string Arc in ArcsToCheck)
 					{
+						//Has this arc not been cached? Has this arc been modified?
 						if (!cachedFile.CachedLoadedAndDatedArcs.ContainsKey(Arc) || CurrentlyLoadedAndDatedArcs[Arc] != cachedFile.CachedLoadedAndDatedArcs[Arc])
 						{
+							//Was arc modified?
 							if (cachedFile.CachedLoadedAndDatedArcs.ContainsKey(Arc) && CurrentlyLoadedAndDatedArcs.ContainsKey(Arc))
 							{
+								//Arc modified!
 								Main.logger.LogDebug($"{Arc} was modified and requires reloading! Entries from this arc will be removed and remade!\nTime In Cache:{cachedFile.CachedLoadedAndDatedArcs[Arc]}\nTime In Folder{CurrentlyLoadedAndDatedArcs[Arc]}");
 							}
 
+							//Regardless of modified or new, it needs to be re/loaded and re/cached.
 							ArcsToReload.Add(Arc);
 
-							cachedFile.MenusList.RemoveWhere(menu => menu.SourceArc.Equals(Arc));
+							//If it was modified, it will just remove any menu cached from it, allowing for a clean recache.
+							cachedFile.MenusList.RemoveWhere(menu => menu.SourceArc.Equals(Arc, StringComparison.OrdinalIgnoreCase));
+						}
+					}
+
+					//This loop checks if the arcs in cache are still valid and cleans the cache if not.
+					foreach (var arc in cachedFile.CachedLoadedAndDatedArcs.ToList())
+					{
+						//Is the cached arc not part of the current paths?
+						if ((!arc.Key.Contains(BepInEx.Paths.GameRootPath) && !arc.Key.Contains(GameMain.Instance.CMSystem.CM3D2Path)) || !File.Exists(arc.Key))
+						{
+							//Remove the arc from our cached list.
+							cachedFile.CachedLoadedAndDatedArcs.Remove(arc.Key);
+							//Remove all menus loaded from this arc.
+							cachedFile.MenusList.RemoveWhere(menu => menu.SourceArc.Equals(arc.Key, StringComparison.OrdinalIgnoreCase));
 						}
 					}
 
@@ -131,7 +157,7 @@ namespace ShortMenuVanillaDatabase
 
 					if (ArcsToReload.Count > 0)
 					{
-						arcFileExplorer = new MultiArcLoader(ArcsToReload.ToArray(), Environment.ProcessorCount, MultiArcLoader.LoadMethod.Single, true, false, MultiArcLoader.Exclude.Voice | MultiArcLoader.Exclude.BG | MultiArcLoader.Exclude.CSV | MultiArcLoader.Exclude.Motion | MultiArcLoader.Exclude.Sound);
+						arcFileExplorer = new MultiArcLoader(ArcsToReload.ToArray(), Environment.ProcessorCount, MultiArcLoader.LoadMethod.Single, true, true, MultiArcLoader.Exclude.Voice | MultiArcLoader.Exclude.BG | MultiArcLoader.Exclude.CSV | MultiArcLoader.Exclude.Motion | MultiArcLoader.Exclude.Sound);
 
 						arcFileExplorer.LoadArcs();
 
@@ -144,7 +170,7 @@ namespace ShortMenuVanillaDatabase
 						Main.logger.LogDebug($"No arc files needed updating...");
 					}
 				}
-				else
+				else//No cache file is found. Load all.
 				{
 					arcFileExplorer.LoadArcs();
 				}
@@ -153,23 +179,24 @@ namespace ShortMenuVanillaDatabase
 				{
 					Main.logger.LogInfo($"Arcs read in {stopwatch.Elapsed}");
 
-					var filesInArc = new HashSet<CM3D2.Toolkit.Guest4168Branch.Arc.Entry.ArcFileEntry>(arcFileExplorer.arc.Files.Values.Where(val => val.Name.Contains(".menu")));
+					var filesInArc = new HashSet<CM3D2.Toolkit.Guest4168Branch.Arc.Entry.ArcFileEntry>(arcFileExplorer.arc.Files.Values.Where(val => val.Name.ToLower().EndsWith(".menu") && !val.Name.ToLower().Contains("_mekure_") && !val.Name.ToLower().Contains("_zurashi_")));
 
-					foreach (CM3D2.Toolkit.Guest4168Branch.Arc.Entry.ArcFileEntry fileInArc in filesInArc)
+					foreach (CM3D2.Toolkit.Guest4168Branch.Arc.Entry.ArcFileEntry fileInArc in filesInArc.OrderBy(f => arcFileExplorer.GetContentsArcFilePath(f)))
 					{
 						var arcFile = arcFileExplorer.GetContentsArcFilePath(fileInArc);
 
 						var data = fileInArc.Pointer.Decompress();
 
-						ReadInternalMenuFile(fileInArc.Name, arcFile, data.Data);
+						if (!ReadInternalMenuFile(fileInArc.Name, arcFile, data.Data))
+						{
+							Main.logger.LogError($"Failed to load {fileInArc.Name} from {arcFile}.");
+						}
 					}
 				}
 
 				Main.logger.LogInfo($"Menu file stubs were done loading at {stopwatch.Elapsed}");
 
 				stopwatch = null;
-
-				//Main.logger.LogInfo($"Nulling arc...");
 
 				arcFileExplorer = null;
 			}), cts.Token);
@@ -200,7 +227,7 @@ namespace ShortMenuVanillaDatabase
 			File.WriteAllText(cachePath, JsonConvert.SerializeObject(cache, Formatting.Indented));
 		}
 
-		private void ReadInternalMenuFile(string f_strMenuFileName, string sourceArc, byte[] data)
+		private bool ReadInternalMenuFile(string f_strMenuFileName, string sourceArc, byte[] data)
 		{
 			MemoryStream DataStream;
 
@@ -220,7 +247,7 @@ namespace ShortMenuVanillaDatabase
 						ex.StackTrace
 				}));
 
-				return;
+				return false;
 			}
 
 			string text6 = string.Empty;
@@ -236,13 +263,11 @@ namespace ShortMenuVanillaDatabase
 				BinaryReader binaryReader = new BinaryReader(DataStream, Encoding.UTF8);
 				string text = binaryReader.ReadString();
 
-				//cacheEntry.Hash = (ulong)data.GetHashCode();
-
 				if (!text.Equals("CM3D2_MENU"))
 				{
 					Main.logger.LogError("ProcScriptBin (例外 : ヘッダーファイルが不正です。) The header indicates a file type that is not a menu file!" + text + " @ " + f_strMenuFileName);
 
-					return;
+					return false;
 				}
 
 				cacheEntry.Version = binaryReader.ReadInt32();
@@ -331,7 +356,7 @@ namespace ShortMenuVanillaDatabase
 							else
 							{
 								Main.logger.LogWarning("The following menu file has a category parent with no category: " + f_strMenuFileName);
-								return;
+								return false;
 							}
 						}
 						else if (stringCom.Equals("color_set"))
@@ -346,7 +371,7 @@ namespace ShortMenuVanillaDatabase
 								{
 									Main.logger.LogWarning("There is no category called(カテゴリがありません。): " + stringList[1].ToLower() + " @ " + f_strMenuFileName);
 
-									return;
+									return false;
 								}
 								if (stringList.Length >= 3)
 								{
@@ -372,7 +397,7 @@ namespace ShortMenuVanillaDatabase
 								{
 									Main.logger.LogError("無限色IDがありません。(The following free color ID does not exist: )" + text10 + " @ " + f_strMenuFileName);
 
-									return;
+									return false;
 								}
 								cacheEntry.MultiColorID = pcMultiColorID;
 							}
@@ -387,7 +412,7 @@ namespace ShortMenuVanillaDatabase
 							{
 								Main.logger.LogError("The following menu file has an icon entry but no field set: " + f_strMenuFileName);
 
-								return;
+								return false;
 							}
 						}
 						else if (stringCom.Equals("saveitem"))
@@ -435,13 +460,13 @@ namespace ShortMenuVanillaDatabase
 							{
 								Main.logger.LogError("A menu with a menu folder setting (メニューフォルダ) has an entry but no field set: " + f_strMenuFileName);
 
-								return;
+								return false;
 							}
 						}
 					}
 				}
 
-				var ExistingMenu = MenusList.Where(t => t.Value.FileName == cacheEntry.FileName).ToList();
+				var ExistingMenu = MenusList.Where(t => String.Equals(t.Value.FileName, cacheEntry.FileName, StringComparison.OrdinalIgnoreCase)).ToList();
 
 				if (ExistingMenu.Count() > 0)
 				{
@@ -449,20 +474,27 @@ namespace ShortMenuVanillaDatabase
 					{
 						var firstEntry = ExistingMenu.First();
 
-						MenusList[firstEntry.Key] = cacheEntry;
-
-						ExistingMenu.Remove(firstEntry);
-
-						if (ExistingMenu.Count() > 0)
+						if (compare.Compare(sourceArc, firstEntry.Value.SourceArc) >= 0)
 						{
-							try
+							MenusList[firstEntry.Key] = cacheEntry;
+
+							ExistingMenu.Remove(firstEntry);
+
+							if (ExistingMenu.Count() > 0)
 							{
-								foreach (var key in ExistingMenu)
+								try
 								{
-									MenusList.Remove(key.Key);
+									foreach (var key in ExistingMenu)
+									{
+										MenusList.Remove(key.Key);
+									}
+								}
+								catch
+								{
+									//Better to just keep going in the case of a failure like this.
+									Main.logger.LogWarning("Failed to remove some old menus from the cache! This many cause duplicates... You may want to delete your cache!");
 								}
 							}
-							catch { Main.logger.LogWarning("Failed to remove some old menus from the cache! This many cause duplicates... You may want to delete your cache!"); }//Better to just keep going in the case of a failure like this.
 						}
 					}
 					catch
@@ -478,6 +510,54 @@ namespace ShortMenuVanillaDatabase
 			catch
 			{
 				Main.logger.LogError("Encountered some error while reading a vanilla menu file...");
+
+				return false;
+			}
+
+			return true;
+		}
+
+		public class ArcCompare : IComparer<string>
+		{
+			public int Compare(string path1, string path2)
+			{
+				if (path1.Contains(BepInEx.Paths.GameRootPath + "\\GameData\\") ^ path2.Contains(BepInEx.Paths.GameRootPath + "\\GameData\\"))
+				{
+					if (path1.Contains(BepInEx.Paths.GameRootPath + "\\GameData\\"))
+					{
+						return 1;
+					}
+					else
+					{
+						return -1;
+					}
+				}
+				else if (path1.Contains(BepInEx.Paths.GameRootPath + "\\GameData_20\\") ^ path2.Contains(BepInEx.Paths.GameRootPath + "\\GameData_20\\"))
+				{
+					if (path1.Contains(BepInEx.Paths.GameRootPath + "\\GameData_20\\"))
+					{
+						return 1;
+					}
+					else
+					{
+						return -1;
+					}
+				}
+				else if (path1.Contains(GameMain.Instance.CMSystem.CM3D2Path + "\\GameData\\") ^ path2.Contains(GameMain.Instance.CMSystem.CM3D2Path + "\\GameData\\"))
+				{
+					if (path1.Contains(GameMain.Instance.CMSystem.CM3D2Path + "\\GameData\\"))
+					{
+						return 1;
+					}
+					else
+					{
+						return -1;
+					}
+				}
+				else
+				{
+					return String.Compare(path1, path2);
+				}
 			}
 		}
 	}

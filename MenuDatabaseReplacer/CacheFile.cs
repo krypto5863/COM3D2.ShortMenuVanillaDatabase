@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace ShortMenuVanillaDatabase
 {
@@ -10,11 +10,12 @@ namespace ShortMenuVanillaDatabase
 		public Dictionary<string, DateTime> CachedLoadedAndDatedArcs { get; set; }
 		public HashSet<CacheFile.MenuStub> MenusList { get; set; }
 
-		public CacheFile() 
+		public CacheFile()
 		{
 			CachedLoadedAndDatedArcs = new Dictionary<string, DateTime>();
 			MenusList = new HashSet<MenuStub>();
 		}
+
 		public class MenuStub
 		{
 			public string FileName { get; set; }
@@ -24,10 +25,18 @@ namespace ShortMenuVanillaDatabase
 			public int Version { get; set; }
 			public string Icon { get; set; }
 			public string Description { get; set; }
+
+			[JsonConverter(typeof(StringEnumConverter))]
 			public MPN Category { get; set; }
+
+			[JsonConverter(typeof(StringEnumConverter))]
 			public MPN ColorSetMPN { get; set; }
+
 			public string ColorSetMenu { get; set; }
+
+			[JsonConverter(typeof(StringEnumConverter))]
 			public MaidParts.PARTS_COLOR MultiColorID { get; set; }
+
 			public bool DelMenu { get; set; }
 			public bool ManMenu { get; set; }
 			public float Priority { get; set; }
