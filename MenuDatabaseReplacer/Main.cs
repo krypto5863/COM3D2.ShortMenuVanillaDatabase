@@ -119,7 +119,7 @@ namespace ShortMenuVanillaDatabase
 		private static bool GiveDataSize(ref int __result)
 		{
 #if !OnlyCompare
-			__result = Database.MenusList.Count;
+			__result = Database.MenusList.Length;
 
 			return false;
 #else

@@ -14,18 +14,18 @@ namespace ShortMenuVanillaDatabase
 {
 	public class MenuDatabaseReplacement
 	{
-		public Dictionary<int, CacheFile.MenuStub> MenusList { get; private set; }
+		public CacheFile.MenuStub[] MenusList { get; private set; }
 
 		public bool Done { get; private set; }
 
-		public int Index { get; private set; }
+		private ArcCompare Compare = new ArcCompare();
 
-		private ArcCompare compare = new ArcCompare();
-
+		/*
 		public MenuDatabaseReplacement()
 		{
-			MenusList = new Dictionary<int, CacheFile.MenuStub>();
+			//MenusList = new List<CacheFile.MenuStub>();
 		}
+		*/
 
 		public IEnumerator StartLoading()
 		{
@@ -36,6 +36,8 @@ namespace ShortMenuVanillaDatabase
 
 			Stopwatch stopwatch = new Stopwatch();
 			stopwatch.Start();
+
+			HashSet<CacheFile.MenuStub> tempList = new HashSet<CacheFile.MenuStub>();
 
 			var cachePath = BepInEx.Paths.CachePath + "\\ShortMenuVanillaDatabase.json";
 			CacheFile cachedFile = null;
@@ -66,8 +68,8 @@ namespace ShortMenuVanillaDatabase
 					var ArcFilesLoaded = Directory.GetFiles(s)
 					.Where(t =>
 						(
-						Path.GetFileName(t).ToLower().StartsWith("menu")
-						|| Path.GetFileName(t).ToLower().StartsWith("parts")
+						Path.GetFileName(t).StartsWith("menu", StringComparison.OrdinalIgnoreCase)
+						|| Path.GetFileName(t).StartsWith("parts", StringComparison.OrdinalIgnoreCase)
 						)
 						&& t.EndsWith(".arc", StringComparison.OrdinalIgnoreCase)
 					)
@@ -80,7 +82,7 @@ namespace ShortMenuVanillaDatabase
 					}
 				}
 
-				Main.logger.LogDebug($"We found {CurrentlyLoadedAndDatedArcs.Count} that fit our specifications.");
+				Main.logger.LogDebug($"We found {CurrentlyLoadedAndDatedArcs.Count} that fit our specifications @ {stopwatch.Elapsed}");
 
 				//Loads all our arc files that we've observed are currently available.
 				MultiArcLoader arcFileExplorer = new MultiArcLoader(CurrentlyLoadedAndDatedArcs.Keys.ToArray(), Environment.ProcessorCount, MultiArcLoader.LoadMethod.Single, true, true, MultiArcLoader.Exclude.Voice | MultiArcLoader.Exclude.BG | MultiArcLoader.Exclude.CSV | MultiArcLoader.Exclude.Motion | MultiArcLoader.Exclude.Sound);
@@ -104,8 +106,9 @@ namespace ShortMenuVanillaDatabase
 						throw e;
 					}
 
-					Main.logger.LogDebug($"Cache was read, it contains {cachedFile.MenusList.Count()} entries");
-					Main.logger.LogDebug($"We extrapolated {cachedFile.CachedLoadedAndDatedArcs.Count} arcs were loaded from cache...");
+					Main.logger.LogDebug($"Cache loaded @ {stopwatch.Elapsed}"
+						+ $"\nIt contains {cachedFile.MenusList.Count()} entries."
+						+ $"\nWe extrapolated {cachedFile.CachedLoadedAndDatedArcs.Count} arcs were loaded from cache...");
 
 					List<string> ArcsToReload = new List<string>();
 
@@ -131,7 +134,7 @@ namespace ShortMenuVanillaDatabase
 							ArcsToReload.Add(Arc);
 
 							//If it was modified, it will just remove any menu cached from it, allowing for a clean recache.
-							cachedFile.MenusList.RemoveWhere(menu => menu.SourceArc.Equals(Arc, StringComparison.OrdinalIgnoreCase));
+							cachedFile.MenusList.RemoveAll(menu => menu.SourceArc.Equals(Arc, StringComparison.OrdinalIgnoreCase));
 						}
 					}
 
@@ -144,15 +147,15 @@ namespace ShortMenuVanillaDatabase
 							//Remove the arc from our cached list.
 							cachedFile.CachedLoadedAndDatedArcs.Remove(arc.Key);
 							//Remove all menus loaded from this arc.
-							cachedFile.MenusList.RemoveWhere(menu => menu.SourceArc.Equals(arc.Key, StringComparison.OrdinalIgnoreCase));
+							cachedFile.MenusList.RemoveAll(menu => menu.SourceArc.Equals(arc.Key, StringComparison.OrdinalIgnoreCase));
 						}
 					}
 
-					Main.logger.LogDebug($"Done checking over files... Updating held list of menus with successfully cached files...");
+					Main.logger.LogDebug($"Done cleaning cache and amending @ {stopwatch.Elapsed}...");
 
-					foreach (CacheFile.MenuStub f in cachedFile.MenusList)
+					foreach (var menu in cachedFile.MenusList)
 					{
-						MenusList[Index++] = f;
+						tempList.Add(menu);
 					}
 
 					if (ArcsToReload.Count > 0)
@@ -177,24 +180,26 @@ namespace ShortMenuVanillaDatabase
 
 				if (arcFileExplorer != null && arcFileExplorer.arc.Files.Count > 0)
 				{
-					Main.logger.LogInfo($"Arcs read in {stopwatch.Elapsed}");
+					Main.logger.LogInfo($"Arcs read @ {stopwatch.Elapsed}");
 
 					var filesInArc = new HashSet<CM3D2.Toolkit.Guest4168Branch.Arc.Entry.ArcFileEntry>(arcFileExplorer.arc.Files.Values.Where(val => val.Name.ToLower().EndsWith(".menu") && !val.Name.ToLower().Contains("_mekure_") && !val.Name.ToLower().Contains("_zurashi_")));
 
 					foreach (CM3D2.Toolkit.Guest4168Branch.Arc.Entry.ArcFileEntry fileInArc in filesInArc.OrderBy(f => arcFileExplorer.GetContentsArcFilePath(f)))
 					{
 						var arcFile = arcFileExplorer.GetContentsArcFilePath(fileInArc);
-
 						var data = fileInArc.Pointer.Decompress();
 
-						if (!ReadInternalMenuFile(fileInArc.Name, arcFile, data.Data))
+						if (!ReadInternalMenuFile(fileInArc.Name, arcFile, data.Data, ref tempList))
 						{
 							Main.logger.LogError($"Failed to load {fileInArc.Name} from {arcFile}.");
 						}
 					}
+
+					Main.logger.LogInfo($"Processed all menus @ {stopwatch.Elapsed}");
 				}
 
-				Main.logger.LogInfo($"Menu file stubs were done loading at {stopwatch.Elapsed}");
+				//Completely done.
+				Main.logger.LogInfo($"SMVD thread is done @ {stopwatch.Elapsed}");
 
 				stopwatch = null;
 
@@ -215,19 +220,21 @@ namespace ShortMenuVanillaDatabase
 				yield break;
 			}
 
+			MenusList = tempList.ToArray();
+
 			Done = true;
 			LoaderTask.Dispose();
 
 			CacheFile cache = new CacheFile()
 			{
-				MenusList = new HashSet<CacheFile.MenuStub>(this.MenusList.Values),
+				MenusList = tempList.ToList(),
 				CachedLoadedAndDatedArcs = CurrentlyLoadedAndDatedArcs
 			};
 
 			File.WriteAllText(cachePath, JsonConvert.SerializeObject(cache, Formatting.Indented));
 		}
 
-		private bool ReadInternalMenuFile(string f_strMenuFileName, string sourceArc, byte[] data)
+		private bool ReadInternalMenuFile(string f_strMenuFileName, string sourceArc, byte[] data, ref HashSet<CacheFile.MenuStub> currentCollection)
 		{
 			MemoryStream DataStream;
 
@@ -466,45 +473,28 @@ namespace ShortMenuVanillaDatabase
 					}
 				}
 
-				var ExistingMenu = MenusList.Where(t => String.Equals(t.Value.FileName, cacheEntry.FileName, StringComparison.OrdinalIgnoreCase)).ToList();
+				var currEnumerable = currentCollection.ToArray();
 
-				if (ExistingMenu.Count() > 0)
+				int leftoverCount = 0;
+
+				foreach (var currElement in currEnumerable)
 				{
-					try
+					if (String.Equals(currElement.FileName, cacheEntry.FileName, StringComparison.OrdinalIgnoreCase))
 					{
-						var firstEntry = ExistingMenu.First();
-
-						if (compare.Compare(sourceArc, firstEntry.Value.SourceArc) >= 0)
+						if (Compare.Compare(sourceArc, currElement.SourceArc) != -1)
 						{
-							MenusList[firstEntry.Key] = cacheEntry;
-
-							ExistingMenu.Remove(firstEntry);
-
-							if (ExistingMenu.Count() > 0)
-							{
-								try
-								{
-									foreach (var key in ExistingMenu)
-									{
-										MenusList.Remove(key.Key);
-									}
-								}
-								catch
-								{
-									//Better to just keep going in the case of a failure like this.
-									Main.logger.LogWarning("Failed to remove some old menus from the cache! This many cause duplicates... You may want to delete your cache!");
-								}
-							}
+							currentCollection.Remove(currElement);
+						}
+						else
+						{
+							leftoverCount++;
 						}
 					}
-					catch
-					{
-						MenusList[Index++] = cacheEntry;
-					}
 				}
-				else
+
+				if (leftoverCount <= 0)
 				{
-					MenusList[Index++] = cacheEntry;
+					currentCollection.Add(cacheEntry);
 				}
 			}
 			catch

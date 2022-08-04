@@ -8,12 +8,12 @@ namespace ShortMenuVanillaDatabase
 	public class CacheFile
 	{
 		public Dictionary<string, DateTime> CachedLoadedAndDatedArcs { get; set; }
-		public HashSet<CacheFile.MenuStub> MenusList { get; set; }
+		public List<CacheFile.MenuStub> MenusList { get; set; }
 
 		public CacheFile()
 		{
 			CachedLoadedAndDatedArcs = new Dictionary<string, DateTime>();
-			MenusList = new HashSet<MenuStub>();
+			MenusList = new List<MenuStub>();
 		}
 
 		public class MenuStub
