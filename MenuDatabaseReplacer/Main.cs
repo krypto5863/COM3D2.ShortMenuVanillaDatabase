@@ -3,12 +3,13 @@ using BepInEx.Logging;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Security;
 using System.Security.Permissions;
 
-//These two lines tell your plugin to not give a flying fuck about accessing private variables/classes whatever. It requires a publicized stubb of the library with those private objects though.
+//These two lines tell your plugin to not give a flying fuck about accessing private variables/classes whatever. It requires a publicized stub of the library with those private objects though.
 [module: UnverifiableCode]
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
 
@@ -16,18 +17,20 @@ namespace ShortMenuVanillaDatabase
 {
 	//This is the metadata set for your plugin.
 	[BepInPlugin("ShortMenuVanillaDatabase", "ShortMenuVanillaDatabase", "1.2")]
+	[SuppressMessage("ReSharper", "InconsistentNaming")]
+	[SuppressMessage("ReSharper", "RedundantAssignment")]
 	public class Main : BaseUnityPlugin
 	{
-		public static Main @this;
+		public static Main This;
 
-		//Static var for the logger so you can log from other classes.
-		public static ManualLogSource logger;
+		//Static var for the PLogger so you can log from other classes.
+		public static ManualLogSource PLogger;
 
 		//This is where the magic happens.
 		public static MenuDatabaseReplacement Database;
 
 		//I'd rather not use an index tbh but whatever, Kiss's implementation is literally retarded.
-		private static Dictionary<MenuDataBase, int> IndexToRead = new Dictionary<MenuDataBase, int>();
+		private static readonly Dictionary<MenuDataBase, int> IndexToRead = new Dictionary<MenuDataBase, int>();
 
 		//Config entry variable. You set your configs to this.
 		//internal static ConfigEntry<bool> ExampleConfig;
@@ -36,40 +39,41 @@ namespace ShortMenuVanillaDatabase
 
 		private void Awake()
 		{
-			//Useful for engaging coroutines or accessing variables non-static variables. Completely optional though.
-			@this = this;
+			//Useful for engaging co-routines or accessing variables non-static variables. Completely optional though.
+			This = this;
 
-			//pushes the logger to a public static var so you can use the bepinex logger from other classes.
-			logger = Logger;
+			//pushes the PLogger to a public static var so you can use the bepInEx PLogger from other classes.
+			PLogger = Logger;
 
 			//Binds the configuration. In other words it sets your ConfigEntry var to your config setup.
 			//ExampleConfig = Config.Bind("Section", "Name", false, "Description");
 
 			//Installs the patches in the Main class.
 
-			var Plugs = Directory.GetFiles(BepInEx.Paths.PluginPath, "*", SearchOption.AllDirectories)
-				.Select(t => Path.GetFileName(t).ToLower());
+			var plugs = Directory.GetFiles(Paths.PluginPath, "*", SearchOption.AllDirectories)
+				.Select(t => Path.GetFileName(t).ToLower())
+				.ToArray();
 
-			var HasDependencies = Plugs.Contains("system.threading.dll") && Plugs.Contains("cm3d2.toolkit.guest4168branch.dll");
+			var hasDependencies = plugs.Contains("system.threading.dll") && plugs.Contains("cm3d2.toolkit.guest4168branch.dll");
 
-			if (!HasDependencies)
+			if (!hasDependencies)
 			{
-				Main.logger.LogFatal("SMVD is missing some dependencies! SMVD will not operate correctly and neither will your game!");
+				PLogger.LogFatal("SMVD is missing some dependencies! SMVD will not operate correctly and neither will your game!");
 			}
 
 #if !OnlyCompare
 			harmony = Harmony.CreateAndPatchAll(typeof(Main));
 #else
-			//Harmony.CreateAndPatchAll(typeof(JustLogging));
+			Harmony.CreateAndPatchAll(typeof(JustLogging));
 #endif
 		}
 
 		//Basic harmony patch format. You specify the class to be patched and the method within that class to be patched. This patcher prefixes the method, meaning it runs before the patched method does. You can also postfix, run after the method patches and do lots of things like change parameters and results with harmony patching. Very powerful.
-		[HarmonyPatch(typeof(MenuDataBase), MethodType.Constructor, new Type[] { typeof(IntPtr), typeof(EnumData), typeof(EnumData) })]
+		[HarmonyPatch(typeof(MenuDataBase), MethodType.Constructor, typeof(IntPtr), typeof(EnumData), typeof(EnumData))]
 		[HarmonyPrefix]
 		private static void BuildingDatabase()
 		{
-			logger.LogDebug("Created the database...");
+			PLogger.LogDebug("Created the database...");
 
 			Database = new MenuDatabaseReplacement();
 		}
@@ -91,9 +95,9 @@ namespace ShortMenuVanillaDatabase
 		[HarmonyPrefix]
 		private static bool StartLoad()
 		{
-			logger.LogInfo("Starting Vanilla Menu Files Analysis...");
+			PLogger.LogInfo("Starting Vanilla Menu Files Analysis...");
 
-			@this.StartCoroutine(Database.StartLoading());
+			This.StartCoroutine(Database.StartLoading());
 #if !OnlyCompare
 			return false;
 #else
@@ -101,7 +105,7 @@ namespace ShortMenuVanillaDatabase
 #endif
 		}
 
-		[HarmonyPatch(typeof(MenuDataBase), "Dispose", new Type[] { typeof(bool) })]
+		[HarmonyPatch(typeof(MenuDataBase), "Dispose", typeof(bool))]
 		[HarmonyPrefix]
 		private static bool DisposeVar(MenuDataBase __instance)
 		{
@@ -328,7 +332,7 @@ namespace ShortMenuVanillaDatabase
 		private static bool GetColorSetMpn(ref int __result, ref MenuDataBase __instance)
 		{
 #if !OnlyCompare
-			__result = (int)Database.MenusList[IndexToRead[__instance]].ColorSetMPN;
+			__result = (int)Database.MenusList[IndexToRead[__instance]].ColorSetMpn;
 
 			return false;
 #else
@@ -354,7 +358,7 @@ namespace ShortMenuVanillaDatabase
 		private static bool GetMultiColorId(ref int __result, ref MenuDataBase __instance)
 		{
 #if !OnlyCompare
-			__result = (int)Database.MenusList[IndexToRead[__instance]].MultiColorID;
+			__result = (int)Database.MenusList[IndexToRead[__instance]].MultiColorId;
 
 			return false;
 #else
