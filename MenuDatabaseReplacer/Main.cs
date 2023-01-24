@@ -332,7 +332,7 @@ namespace ShortMenuVanillaDatabase
 		private static bool GetColorSetMpn(ref int __result, ref MenuDataBase __instance)
 		{
 #if !OnlyCompare
-			__result = (int)Database.MenusList[IndexToRead[__instance]].ColorSetMpn;
+			__result = (int)Database.MenusList[IndexToRead[__instance]].ColorSetMPN;
 
 			return false;
 #else
@@ -358,7 +358,7 @@ namespace ShortMenuVanillaDatabase
 		private static bool GetMultiColorId(ref int __result, ref MenuDataBase __instance)
 		{
 #if !OnlyCompare
-			__result = (int)Database.MenusList[IndexToRead[__instance]].MultiColorId;
+			__result = (int)Database.MenusList[IndexToRead[__instance]].MultiColorID;
 
 			return false;
 #else

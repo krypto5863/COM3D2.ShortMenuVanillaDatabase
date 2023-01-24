@@ -395,7 +395,7 @@ namespace ShortMenuVanillaDatabase
 							{
 								try
 								{
-									cacheEntry.ColorSetMpn = (MPN)Enum.Parse(typeof(MPN), stringList[1].ToLower());
+									cacheEntry.ColorSetMPN = (MPN)Enum.Parse(typeof(MPN), stringList[1].ToLower());
 								}
 								catch
 								{
@@ -430,7 +430,7 @@ namespace ShortMenuVanillaDatabase
 
 										return false;
 									}
-									cacheEntry.MultiColorId = pcMultiColorId;
+									cacheEntry.MultiColorID = pcMultiColorId;
 								}
 
 								break;
