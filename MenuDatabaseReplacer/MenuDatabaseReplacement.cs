@@ -84,6 +84,7 @@ namespace ShortMenuVanillaDatabase
 				{
 					$"{Paths.GameRootPath}\\GameData"
 				};
+
 				if (!string.IsNullOrEmpty(GameMain.Instance.CMSystem.CM3D2Path))
 				{
 					pathsToLoad.Add(GameMain.Instance.CMSystem.CM3D2Path + "\\GameData");

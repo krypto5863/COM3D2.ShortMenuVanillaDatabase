@@ -39,12 +39,12 @@ namespace ShortMenuVanillaDatabase
 			public MPN Category { get; set; }
 
 			[JsonConverter(typeof(StringEnumConverter))]
-			public MPN ColorSetMpn { get; set; }
+			public MPN ColorSetMPN { get; set; }
 
 			public string ColorSetMenu { get; set; }
 
 			[JsonConverter(typeof(StringEnumConverter))]
-			public MaidParts.PARTS_COLOR MultiColorId { get; set; }
+			public MaidParts.PARTS_COLOR MultiColorID { get; set; }
 
 			public bool DelMenu { get; set; }
 			public bool ManMenu { get; set; }
