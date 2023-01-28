@@ -16,7 +16,7 @@ using System.Security.Permissions;
 namespace ShortMenuVanillaDatabase
 {
 	//This is the metadata set for your plugin.
-	[BepInPlugin("ShortMenuVanillaDatabase", "ShortMenuVanillaDatabase", "1.2.1")]
+	[BepInPlugin("ShortMenuVanillaDatabase", "ShortMenuVanillaDatabase", "1.3")]
 	[SuppressMessage("ReSharper", "InconsistentNaming")]
 	[SuppressMessage("ReSharper", "RedundantAssignment")]
 	public class Main : BaseUnityPlugin
@@ -95,7 +95,7 @@ namespace ShortMenuVanillaDatabase
 		[HarmonyPrefix]
 		private static bool StartLoad()
 		{
-			PLogger.LogInfo("Starting Vanilla Menu Files Analysis...");
+			PLogger.LogDebug("Starting Vanilla Menu Files Analysis...");
 
 			This.StartCoroutine(Database.StartLoading());
 #if !OnlyCompare
@@ -123,7 +123,7 @@ namespace ShortMenuVanillaDatabase
 		private static bool GiveDataSize(ref int __result)
 		{
 #if !OnlyCompare
-			__result = Database.MenusList.Length;
+			__result = Database.MenusList.Count;
 
 			return false;
 #else
@@ -332,7 +332,7 @@ namespace ShortMenuVanillaDatabase
 		private static bool GetColorSetMpn(ref int __result, ref MenuDataBase __instance)
 		{
 #if !OnlyCompare
-			__result = (int)Database.MenusList[IndexToRead[__instance]].ColorSetMPN;
+			__result = (int)Database.MenusList[IndexToRead[__instance]].ColorSetMpn;
 
 			return false;
 #else
@@ -358,7 +358,7 @@ namespace ShortMenuVanillaDatabase
 		private static bool GetMultiColorId(ref int __result, ref MenuDataBase __instance)
 		{
 #if !OnlyCompare
-			__result = (int)Database.MenusList[IndexToRead[__instance]].MultiColorID;
+			__result = (int)Database.MenusList[IndexToRead[__instance]].MultiColorId;
 
 			return false;
 #else

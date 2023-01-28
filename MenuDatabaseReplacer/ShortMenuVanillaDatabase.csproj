@@ -87,6 +87,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="0Old\MenuDatabaseReplacement.cs" />
+    <Compile Include="ArcCompare.cs" />
     <Compile Include="CacheFile.cs" />
     <Compile Include="JustLogging.cs" />
     <Compile Include="Main.cs" />
@@ -96,6 +98,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>del "G:\KISS\COM3D2Test\BepinEx\plugins\$(TargetFileName)"

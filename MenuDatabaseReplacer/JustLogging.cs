@@ -173,7 +173,7 @@ namespace ShortMenuVanillaDatabase
 		[HarmonyPostfix]
 		private static void iscoll(ref bool __result, MenuDataBase __instance)
 		{
-			if (__result == true)
+			if (__result)
 			{
 				Main.PLogger.LogDebug($"returning is collabo of {__result} for {__instance.GetMenuFileName()}");
 			}
