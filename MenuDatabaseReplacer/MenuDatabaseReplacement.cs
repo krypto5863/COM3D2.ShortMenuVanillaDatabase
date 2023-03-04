@@ -86,14 +86,25 @@ namespace ShortMenuVanillaDatabase
 			{
 				var arcsToLoad = arcsProcessTask.Result.Keys.ToArray();
 
-				if (arcsToLoad == null || arcsToLoad.Length <= 0)
+				if (arcsToLoad.Length <= 0)
 				{
 					return;
 				}
 
 				Main.PLogger.LogInfo($"Reloading {arcsToLoad.Length} arc files!");
 
-				var arcFileExplorer = new MultiArcLoader(arcsToLoad, Environment.ProcessorCount, MultiArcLoader.LoadMethod.Single, true, true, MultiArcLoader.Exclude.Voice | MultiArcLoader.Exclude.BG | MultiArcLoader.Exclude.CSV | MultiArcLoader.Exclude.Motion | MultiArcLoader.Exclude.Sound);
+				var cmArcs = arcsToLoad
+					.Where(r => r.ToLower().StartsWith(GameMain.Instance.CMSystem.CM3D2Path,
+						StringComparison.OrdinalIgnoreCase)).ToArray();
+				var com20Arcs = arcsToLoad
+					.Where(r => r.ToLower().StartsWith($"{Paths.GameRootPath}\\GameData_20",
+						StringComparison.OrdinalIgnoreCase)).ToArray();
+				var comArcs = arcsToLoad.Except(cmArcs).Except(com20Arcs).ToArray();
+
+				var arcFileExplorer = new MultiArcLoader(cmArcs, com20Arcs, comArcs, new string[0],
+					Environment.ProcessorCount, MultiArcLoader.LoadMethod.Single, true, false,
+					MultiArcLoader.Exclude.Voice | MultiArcLoader.Exclude.BG | MultiArcLoader.Exclude.CSV |
+					MultiArcLoader.Exclude.Motion | MultiArcLoader.Exclude.Sound);
 
 				arcFileExplorer.LoadArcs();
 
@@ -104,14 +115,14 @@ namespace ShortMenuVanillaDatabase
 
 				var filesInArc =
 					arcFileExplorer.arc.Files.Values.Where(val =>
-						val.Name.ToLower()
-							.EndsWith(".menu") &&
-						!val.Name.ToLower()
-							.Contains("_mekure_") &&
-						!val.Name.ToLower()
-							.Contains("_zurashi_")
-					)
-					.ToArray();
+							val.Name.ToLower()
+								.EndsWith(".menu") &&
+							!val.Name.ToLower()
+								.Contains("_mekure_") &&
+							!val.Name.ToLower()
+								.Contains("_zurashi_")
+						)
+						.ToArray();
 
 				var filesToLoad = filesInArc.OrderBy(f => arcFileExplorer.GetContentsArcFilePath(f)).ToArray();
 
@@ -141,6 +152,8 @@ namespace ShortMenuVanillaDatabase
 					}
 				}
 
+				arcFileExplorer.Dispose();
+
 				Main.PLogger.LogInfo($"Done processing {filesToLoad.Length} menu files @ {stopwatch.Elapsed}");
 			}, TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.AttachedToParent);
 
@@ -165,7 +178,7 @@ namespace ShortMenuVanillaDatabase
 
 		private static Dictionary<string, DateTime> GetAllArcsToLoad()
 		{
-			var currentlyLoadedAndDatedArcs = new Dictionary<string, DateTime>();
+			var currentlyLoadedAndDatedArcs = new Dictionary<string, DateTime>(3);
 
 			var pathsToLoad = new List<string>
 			{

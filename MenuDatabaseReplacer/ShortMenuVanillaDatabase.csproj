@@ -45,8 +45,7 @@
     <Reference Include="BepInEx, Version=5.4.20.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\BepInEx.BaseLib.5.4.20\lib\net35\BepInEx.dll</HintPath>
     </Reference>
-    <Reference Include="CM3D2.Toolkit.Guest4168Branch, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="CM3D2.Toolkit.Guest4168Branch">
       <HintPath>..\..\..\..\Desktop\Game Related Files\Meido Related Stuff\Meido Assemblies\COM Assemblies\Resources\CM3D2.Toolkit.Guest4168Branch.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil, Version=0.10.4.0, Culture=neutral, PublicKeyToken=50cebf1cceb9d05e, processorArchitecture=MSIL">
