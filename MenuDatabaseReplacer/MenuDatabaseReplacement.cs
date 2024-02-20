@@ -29,16 +29,30 @@ namespace ShortMenuVanillaDatabase
 				yield break;
 			}
 
-			Main.PLogger.LogInfo("Starting Analysis of arc files...");
+			ShortMenuVanillaDatabase.PLogger.LogInfo("Starting Analysis of arc files...");
 
 			var stopwatch = new Stopwatch();
 			stopwatch.Start();
 
-			var getArcsToLoadTask = Task.Factory.StartNew(GetAllArcsToLoad);
+			/*
+            // var getArcsToLoadTask = new Task<Dictionary<string, DateTime>>(GetAllArcsToLoad);
+            //getArcsToLoadTask.RunSynchronously();
 
-			var processArcsToLoadWithCache = getArcsToLoadTask.ContinueWith(loadArcsTask =>
+            var arcsToLoad = GetAllArcsToLoad();
+
+            var processArcsToLoadWithCache = ContinuationFunction(arcsToLoad);
+
+			ContinuationFunction2(processArcsToLoadWithCache, stopwatch);
+
+            Done = true;
+
+			_cachedFile.CachedLoadedAndDatedArcs = processArcsToLoadWithCache;
+			File.WriteAllText(_cachePath, JsonConvert.SerializeObject(_cachedFile, Formatting.Indented))
+			*/
+			var getArcsToLoadTask = Task.Factory.StartNew(GetAllArcsToLoad);
+			var processArcsToLoadWithCache = getArcsToLoadTask.ContinueWith(loadArcs =>
 			{
-				var loadedArcs = loadArcsTask.Result;
+				var loadedArcs = loadArcs.Result;
 
 				//There's no cache file to load. Just load every file then.
 				if (File.Exists(_cachePath) == false)
@@ -61,7 +75,7 @@ namespace ShortMenuVanillaDatabase
 					//This arc was removed!
 					if (loadedArcs.ContainsKey(pair.Key) == false)
 					{
-						Main.PLogger.LogDebug($"Removing {pair.Key} as it's missing!");
+						ShortMenuVanillaDatabase.PLogger.LogDebug($"Removing {pair.Key} as it's missing!");
 						_cachedFile.RemoveAllTracesOfArc(pair.Key);
 						continue;
 					}
@@ -91,7 +105,7 @@ namespace ShortMenuVanillaDatabase
 					return;
 				}
 
-				Main.PLogger.LogInfo($"Reloading {arcsToLoad.Length} arc files!");
+				ShortMenuVanillaDatabase.PLogger.LogInfo($"Reloading {arcsToLoad.Length} arc files!");
 
 				var cmArcs = arcsToLoad
 					.Where(r => r.ToLower().StartsWith(GameMain.Instance.CMSystem.CM3D2Path,
@@ -102,7 +116,7 @@ namespace ShortMenuVanillaDatabase
 				var comArcs = arcsToLoad.Except(cmArcs).Except(com20Arcs).ToArray();
 
 				var arcFileExplorer = new MultiArcLoader(cmArcs, com20Arcs, comArcs, new string[0],
-					Environment.ProcessorCount, MultiArcLoader.LoadMethod.Single, true, false,
+					Math.Max(Environment.ProcessorCount, 1), MultiArcLoader.LoadMethod.Single, true, false,
 					MultiArcLoader.Exclude.Voice | MultiArcLoader.Exclude.BG | MultiArcLoader.Exclude.CSV |
 					MultiArcLoader.Exclude.Motion | MultiArcLoader.Exclude.Sound);
 
@@ -140,7 +154,7 @@ namespace ShortMenuVanillaDatabase
 
 					if (ReadInternalMenuFile(fileInArc.Name, data.Data, out var menuStub) == false)
 					{
-						Main.PLogger.LogError($"Failed to load {fileInArc.Name} from {arcFile}.");
+						ShortMenuVanillaDatabase.PLogger.LogError($"Failed to load {fileInArc.Name} from {arcFile}.");
 						continue;
 					}
 
@@ -154,7 +168,7 @@ namespace ShortMenuVanillaDatabase
 
 				arcFileExplorer.Dispose();
 
-				Main.PLogger.LogInfo($"Done processing {filesToLoad.Length} menu files @ {stopwatch.Elapsed}");
+				ShortMenuVanillaDatabase.PLogger.LogInfo($"Done processing {filesToLoad.Length} menu files @ {stopwatch.Elapsed}");
 			}, TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.AttachedToParent);
 
 			yield return new WaitWhile(() => loadAndAmend.IsCompleted == false);
@@ -173,7 +187,127 @@ namespace ShortMenuVanillaDatabase
 			File.WriteAllText(_cachePath, JsonConvert.SerializeObject(_cachedFile, Formatting.Indented));
 
 			stopwatch.Stop();
-			Main.PLogger.LogInfo($"Completely done @ {stopwatch.Elapsed}");
+			ShortMenuVanillaDatabase.PLogger.LogInfo($"Completely done @ {stopwatch.Elapsed}");
+		}
+
+		private static void ContinuationFunction2(Dictionary<string, DateTime> arcsProcessTask, Stopwatch stopwatch)
+		{
+			var arcsToLoad = arcsProcessTask.Keys.ToArray();
+
+			if (arcsToLoad.Length <= 0)
+			{
+				return;
+			}
+
+			ShortMenuVanillaDatabase.PLogger.LogInfo($"Reloading {arcsToLoad.Length} arc files!");
+
+			var cmArcs = arcsToLoad
+				.Where(r => r.ToLower().StartsWith(GameMain.Instance.CMSystem.CM3D2Path,
+					StringComparison.OrdinalIgnoreCase)).ToArray();
+			var com20Arcs = arcsToLoad
+				.Where(r => r.ToLower().StartsWith($"{Paths.GameRootPath}\\GameData_20",
+					StringComparison.OrdinalIgnoreCase)).ToArray();
+			var comArcs = arcsToLoad.Except(cmArcs).Except(com20Arcs).ToArray();
+
+			var arcFileExplorer = new MultiArcLoader(cmArcs, com20Arcs, comArcs, new string[0],
+				2, MultiArcLoader.LoadMethod.Single, true, false,
+				MultiArcLoader.Exclude.Voice | MultiArcLoader.Exclude.BG | MultiArcLoader.Exclude.CSV |
+				MultiArcLoader.Exclude.Motion | MultiArcLoader.Exclude.Sound);
+
+			arcFileExplorer.LoadArcs();
+
+			if (arcFileExplorer.arc.Files.Count <= 0)
+			{
+				return;
+			}
+
+			var filesInArc =
+				arcFileExplorer.arc.Files.Values.Where(val =>
+						val.Name.ToLower()
+							.EndsWith(".menu") &&
+						!val.Name.ToLower()
+							.Contains("_mekure_") &&
+						!val.Name.ToLower()
+							.Contains("_zurashi_")
+					)
+					.ToArray();
+
+			var filesToLoad = filesInArc.OrderBy(f => arcFileExplorer.GetContentsArcFilePath(f)).ToArray();
+
+			foreach (var fileInArc in filesToLoad)
+			{
+				var arcFile = arcFileExplorer.GetContentsArcFilePath(fileInArc);
+
+				if (_cachedFile.ShouldAddMenuFile(fileInArc.Name, arcFile) == false)
+				{
+					//Main.PLogger.LogDebug($"Skipping {fileInArc.Name} @ {arcFile}");
+					continue;
+				}
+
+				var data = fileInArc.Pointer.Decompress();
+
+				if (ReadInternalMenuFile(fileInArc.Name, data.Data, out var menuStub) == false)
+				{
+					ShortMenuVanillaDatabase.PLogger.LogError($"Failed to load {fileInArc.Name} from {arcFile}.");
+					continue;
+				}
+
+				menuStub.SourceArc = arcFile;
+
+				if (_cachedFile.TryAddMenuFile(menuStub, arcFile) == false)
+				{
+					//Main.PLogger.LogDebug($"Won't add {menuStub.FileName} from {arcFile} because it surmised it's lower in priority.");
+				}
+			}
+
+			arcFileExplorer.Dispose();
+
+			ShortMenuVanillaDatabase.PLogger.LogInfo($"Done processing {filesToLoad.Length} menu files @ {stopwatch.Elapsed}");
+		}
+
+		private Dictionary<string, DateTime> ContinuationFunction(Dictionary<string, DateTime> loadArcs)
+		{
+			var loadedArcs = loadArcs;
+
+			//There's no cache file to load. Just load every file then.
+			if (File.Exists(_cachePath) == false)
+			{
+				_cachedFile = new CacheFile();
+				return loadedArcs;
+			}
+
+			var sCachedFile = File.ReadAllText(_cachePath);
+			_cachedFile = JsonConvert.DeserializeObject<CacheFile>(sCachedFile) ?? new CacheFile();
+			var arcsToReload = new Dictionary<string, DateTime>();
+
+			if (_cachedFile.CachedLoadedAndDatedArcs is null || _cachedFile.MenusList is null)
+			{
+				return loadedArcs;
+			}
+
+			foreach (var pair in _cachedFile.CachedLoadedAndDatedArcs.ToArray())
+			{
+				//This arc was removed!
+				if (loadedArcs.ContainsKey(pair.Key) == false)
+				{
+					ShortMenuVanillaDatabase.PLogger.LogDebug($"Removing {pair.Key} as it's missing!");
+					_cachedFile.RemoveAllTracesOfArc(pair.Key);
+					continue;
+				}
+
+				//Arc hasn't changed!
+				if (loadedArcs[pair.Key] == pair.Value)
+				{
+					continue;
+				}
+
+				_cachedFile.RemoveAllTracesOfArc(pair.Key);
+				arcsToReload[pair.Key] = pair.Value;
+			}
+
+			var newArcsToReload = loadedArcs.Where(arc => _cachedFile.CachedLoadedAndDatedArcs.Keys.Contains(arc.Key) == false);
+
+			return arcsToReload.Concat(newArcsToReload).ToDictionary(r => r.Key, t => t.Value);
 		}
 
 		private static Dictionary<string, DateTime> GetAllArcsToLoad()
@@ -232,7 +366,7 @@ namespace ShortMenuVanillaDatabase
 			}
 			catch (Exception ex)
 			{
-				Main.PLogger.LogError(string.Concat("The following menu file could not be read! (メニューファイルがが読み込めませんでした。): ", fStrMenuFileName, "\n\n", ex.Message, "\n", ex.StackTrace));
+				ShortMenuVanillaDatabase.PLogger.LogError(string.Concat("The following menu file could not be read! (メニューファイルがが読み込めませんでした。): ", fStrMenuFileName, "\n\n", ex.Message, "\n", ex.StackTrace));
 
 				return false;
 			}
@@ -246,7 +380,7 @@ namespace ShortMenuVanillaDatabase
 
 				if (!text.Equals("CM3D2_MENU"))
 				{
-					Main.PLogger.LogError("ProcScriptBin (例外 : ヘッダーファイルが不正です。) The header indicates a file type that is not a menu file!" + text + " @ " + fStrMenuFileName);
+					ShortMenuVanillaDatabase.PLogger.LogError("ProcScriptBin (例外 : ヘッダーファイルが不正です。) The header indicates a file type that is not a menu file!" + text + " @ " + fStrMenuFileName);
 
 					return false;
 				}
@@ -297,7 +431,7 @@ namespace ShortMenuVanillaDatabase
 									break;
 								}
 							case "name":
-								Main.PLogger.LogWarning("Menu file has no name and an empty name will be used instead." + " @ " + fStrMenuFileName);
+								ShortMenuVanillaDatabase.PLogger.LogWarning("Menu file has no name and an empty name will be used instead." + " @ " + fStrMenuFileName);
 
 								cacheEntry.Name = "";
 								break;
@@ -308,7 +442,7 @@ namespace ShortMenuVanillaDatabase
 								break;
 
 							case "setumei":
-								Main.PLogger.LogWarning("Menu file has no description (setumei) and an empty description will be used instead." + " @ " + fStrMenuFileName);
+								ShortMenuVanillaDatabase.PLogger.LogWarning("Menu file has no description (setumei) and an empty description will be used instead." + " @ " + fStrMenuFileName);
 
 								cacheEntry.Description = "";
 								break;
@@ -328,7 +462,7 @@ namespace ShortMenuVanillaDatabase
 									break;
 								}
 							case "category":
-								Main.PLogger.LogWarning("The following menu file has a category parent with no category: " + fStrMenuFileName);
+								ShortMenuVanillaDatabase.PLogger.LogWarning("The following menu file has a category parent with no category: " + fStrMenuFileName);
 								return false;
 
 							case "color_set" when stringList.Length > 1:
@@ -339,7 +473,7 @@ namespace ShortMenuVanillaDatabase
 									}
 									catch
 									{
-										Main.PLogger.LogWarning("There is no category called(カテゴリがありません。): " + stringList[1].ToLower() + " @ " + fStrMenuFileName);
+										ShortMenuVanillaDatabase.PLogger.LogWarning("There is no category called(カテゴリがありません。): " + stringList[1].ToLower() + " @ " + fStrMenuFileName);
 
 										return false;
 									}
@@ -351,7 +485,7 @@ namespace ShortMenuVanillaDatabase
 									break;
 								}
 							case "color_set":
-								Main.PLogger.LogWarning("A color_set entry exists but is otherwise empty" + " @ " + fStrMenuFileName);
+								ShortMenuVanillaDatabase.PLogger.LogWarning("A color_set entry exists but is otherwise empty" + " @ " + fStrMenuFileName);
 								break;
 
 							case "tex":
@@ -367,7 +501,7 @@ namespace ShortMenuVanillaDatabase
 										}
 										catch
 										{
-											Main.PLogger.LogError("無限色IDがありません。(The following free color ID does not exist: )" + text10 + " @ " + fStrMenuFileName);
+											ShortMenuVanillaDatabase.PLogger.LogError("無限色IDがありません。(The following free color ID does not exist: )" + text10 + " @ " + fStrMenuFileName);
 
 											return false;
 										}
@@ -385,7 +519,7 @@ namespace ShortMenuVanillaDatabase
 									}
 									else
 									{
-										Main.PLogger.LogError("The following menu file has an icon entry but no field set: " + fStrMenuFileName);
+										ShortMenuVanillaDatabase.PLogger.LogError("The following menu file has an icon entry but no field set: " + fStrMenuFileName);
 
 										return false;
 									}
@@ -397,13 +531,13 @@ namespace ShortMenuVanillaDatabase
 									var text11 = stringList[1];
 									if (string.IsNullOrEmpty(text11))
 									{
-										Main.PLogger.LogWarning("SaveItem is either null or empty." + " @ " + fStrMenuFileName);
+										ShortMenuVanillaDatabase.PLogger.LogWarning("SaveItem is either null or empty." + " @ " + fStrMenuFileName);
 									}
 
 									break;
 								}
 							case "saveitem":
-								Main.PLogger.LogWarning("A saveitem entry exists with nothing set in the field @ " + fStrMenuFileName);
+								ShortMenuVanillaDatabase.PLogger.LogWarning("A saveitem entry exists with nothing set in the field @ " + fStrMenuFileName);
 								break;
 
 							case "unsetitem":
@@ -415,7 +549,7 @@ namespace ShortMenuVanillaDatabase
 								break;
 
 							case "priority":
-								Main.PLogger.LogError("The following menu file has a priority entry but no field set. A default value of 10000 will be used: " + fStrMenuFileName);
+								ShortMenuVanillaDatabase.PLogger.LogError("The following menu file has a priority entry but no field set. A default value of 10000 will be used: " + fStrMenuFileName);
 
 								cacheEntry.Priority = 10000f;
 								break;
@@ -430,7 +564,7 @@ namespace ShortMenuVanillaDatabase
 									break;
 								}
 							case "メニューフォルダ":
-								Main.PLogger.LogError("A menu with a menu folder setting (メニューフォルダ) has an entry but no field set: " + fStrMenuFileName);
+								ShortMenuVanillaDatabase.PLogger.LogError("A menu with a menu folder setting (メニューフォルダ) has an entry but no field set: " + fStrMenuFileName);
 
 								menuStub = null;
 								return false;
@@ -440,7 +574,7 @@ namespace ShortMenuVanillaDatabase
 			}
 			catch
 			{
-				Main.PLogger.LogError("Encountered some error while reading a vanilla menu file...");
+				ShortMenuVanillaDatabase.PLogger.LogError("Encountered some error while reading a vanilla menu file...");
 				return false;
 			}
 

@@ -19,9 +19,9 @@ namespace ShortMenuVanillaDatabase
 	[BepInPlugin("ShortMenuVanillaDatabase", "ShortMenuVanillaDatabase", "1.3.1")]
 	[SuppressMessage("ReSharper", "InconsistentNaming")]
 	[SuppressMessage("ReSharper", "RedundantAssignment")]
-	public class Main : BaseUnityPlugin
+	public class ShortMenuVanillaDatabase : BaseUnityPlugin
 	{
-		public static Main This;
+		public static ShortMenuVanillaDatabase This;
 
 		//Static var for the PLogger so you can log from other classes.
 		public static ManualLogSource PLogger;
@@ -35,7 +35,7 @@ namespace ShortMenuVanillaDatabase
 		//Config entry variable. You set your configs to this.
 		//internal static ConfigEntry<bool> ExampleConfig;
 
-		private static Harmony harmony;
+		//private static Harmony harmony;
 
 		private void Awake()
 		{
@@ -58,14 +58,26 @@ namespace ShortMenuVanillaDatabase
 
 			if (!hasDependencies)
 			{
-				PLogger.LogFatal("SMVD is missing some dependencies! SMVD will not operate correctly and neither will your game!");
+				PLogger.LogFatal("SMVD is missing some dependencies! Your game will now quit!");
+
+				var message =
+					"ShortMenuVanillaDatabase is missing System.Threading.dll And/Or CM3D2.Toolkit.Guest4168Branch.dll!"
+					+ "\nShortMenuVanillaDatabase は System.Threading.dll と/または CM3D2.Toolkit.Guest4168Branch.dll がないよ！";
+
+				Assert(message, "Missing Reference!");
 			}
 
 #if !OnlyCompare
-			harmony = Harmony.CreateAndPatchAll(typeof(Main));
+			Harmony.CreateAndPatchAll(typeof(ShortMenuVanillaDatabase));
 #else
 			Harmony.CreateAndPatchAll(typeof(JustLogging));
 #endif
+		}
+
+		private static void Assert(string message, string title)
+		{
+			NUty.WinMessageBox(NUty.GetWindowHandle(), message, title, 0x00000010 | 0x00000000);
+			UnityEngine.Application.Quit();
 		}
 
 		//Basic harmony patch format. You specify the class to be patched and the method within that class to be patched. This patcher prefixes the method, meaning it runs before the patched method does. You can also postfix, run after the method patches and do lots of things like change parameters and results with harmony patching. Very powerful.

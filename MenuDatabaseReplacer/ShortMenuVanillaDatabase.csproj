@@ -90,7 +90,7 @@
     <Compile Include="ArcCompare.cs" />
     <Compile Include="CacheFile.cs" />
     <Compile Include="JustLogging.cs" />
-    <Compile Include="Main.cs" />
+    <Compile Include="ShortMenuVanillaDatabase.cs" />
     <Compile Include="MenuDatabaseReplacement.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
